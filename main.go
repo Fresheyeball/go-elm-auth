@@ -22,29 +22,32 @@ func factorial(n int) int {
 	return n * factorial(n-1)
 }
 
-func connection(socket socketio.Socket) {
-	log.Println("Connected!")
-	socket.Join(roomKey)
-}
+func listen(sockets *socketio.Server) *socketio.Server {
+	connection := func(socket socketio.Socket) {
+		log.Println("Connected!")
+		socket.Join(roomKey)
+	}
 
-func message(sockets *socketio.Server) func(string) {
-	return func(message string) {
+	message := func(m string) {
 		sockets.BroadcastTo(
 			roomKey,
 			messageKey,
-			strconv.Itoa(factorial(len(message))))
+			strconv.Itoa(factorial(len(m))))
 	}
+
+	attempt(sockets.On("connection", connection))
+	attempt(sockets.On(messageKey, message))
+
+	return sockets
 }
 
 func newSocket() *socketio.Server {
 	sockets := attemptGet(socketio.NewServer(nil)).(*socketio.Server)
-	attempt(sockets.On("connection", connection))
-	attempt(sockets.On(messageKey, message(sockets)))
 	return sockets
 }
 
 func route() {
-	http.Handle("/socket.io/", newSocket())
+	http.Handle("/socket.io/", listen(newSocket()))
 	http.Handle("/", http.FileServer(http.Dir("ui/dist")))
 }
 
