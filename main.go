@@ -29,7 +29,6 @@ func connection(socket socketio.Socket) {
 
 func message(sockets *socketio.Server) func(string) {
 	return func(message string) {
-		log.Println(message)
 		sockets.BroadcastTo(
 			roomKey,
 			messageKey,
