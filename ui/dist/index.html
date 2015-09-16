@@ -3533,8 +3533,10 @@ Elm.Main.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $SocketIO = Elm.SocketIO.make(_elm),
    $Task = Elm.Task.make(_elm);
+   var onMessage = $Signal.mailbox("");
    var onInput = $Signal.mailbox("");
-   var view = function (status) {
+   var view = F2(function (status,
+   response) {
       return function () {
          var status$ = function () {
             switch (status)
@@ -3542,7 +3544,7 @@ Elm.Main.make = function (_elm) {
                return "Not connected :(";
                case true: return "Connected!";}
             _U.badCase($moduleName,
-            "between lines 24 and 28");
+            "between lines 39 and 42");
          }();
          return A2($Html.div,
          _L.fromArray([]),
@@ -3554,23 +3556,43 @@ Elm.Main.make = function (_elm) {
                       "input",
                       $Html$Events.targetValue,
                       $Signal.message(onInput.address))]),
-                      _L.fromArray([]))]));
+                      _L.fromArray([]))
+                      ,A2($Html.br,
+                      _L.fromArray([]),
+                      _L.fromArray([]))
+                      ,$Html.text(A2($Basics._op["++"],
+                      "factorial of the message length is ",
+                      response))]));
       }();
-   };
+   });
    var onConnect = $Signal.mailbox(false);
-   var main = A2($Signal._op["<~"],
+   var main = A2($Signal._op["~"],
+   A2($Signal._op["<~"],
    view,
-   onConnect.signal);
+   onConnect.signal),
+   onMessage.signal);
    var socket = A2($SocketIO.io,
    "http://localhost:8000/socket",
    $SocketIO.defaultOptions);
    var connect = Elm.Native.Task.make(_elm).perform(A2($Task.andThen,
    socket,
    $SocketIO.connected(onConnect.address)));
+   var messageKey = "message";
+   var send = Elm.Native.Task.make(_elm).performSignal("send",
+   A2($Signal._op["<~"],
+   function ($) {
+      return $Task.andThen(socket)($SocketIO.emit(messageKey)($));
+   },
+   onInput.signal));
+   var recieve = Elm.Native.Task.make(_elm).perform($Task.andThen(socket)(A2($SocketIO.on,
+   messageKey,
+   onMessage.address)));
    _elm.Main.values = {_op: _op
+                      ,messageKey: messageKey
                       ,socket: socket
                       ,onConnect: onConnect
                       ,onInput: onInput
+                      ,onMessage: onMessage
                       ,view: view
                       ,main: main};
    return _elm.Main.values;
