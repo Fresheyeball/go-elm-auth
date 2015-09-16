@@ -20,7 +20,7 @@ func newSocket() *socketio.Server {
 }
 
 func route() {
-	http.Handle("/socket/", newSocket())
+	http.Handle("/socket.io/", newSocket())
 	http.Handle("/", http.FileServer(http.Dir("ui/dist")))
 }
 
